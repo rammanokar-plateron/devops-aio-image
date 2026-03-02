@@ -45,9 +45,34 @@ rm -f /tmp/kubectl.sha256
 YQ_ASSET="yq_linux_${ARCH_YQ}"
 curl -fsSLo /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/${YQ_ASSET}"
 curl -fsSLo /tmp/yq_checksums "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/checksums"
-awk -v asset="$YQ_ASSET" '$2 == asset {print $1 "  /usr/local/bin/yq"}' /tmp/yq_checksums | sha256sum -c -
+curl -fsSLo /tmp/yq_checksums_order "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/checksums_hashes_order"
+YQ_SHA256_COL="$(
+  awk '
+    $0 == "SHA-256" {
+      print NR + 1
+      exit
+    }
+  ' /tmp/yq_checksums_order
+)"
+if [[ -z "${YQ_SHA256_COL}" ]]; then
+  echo "Could not determine SHA-256 column for yq checksums" >&2
+  exit 1
+fi
+YQ_SHA256="$(
+  awk -v asset="$YQ_ASSET" -v col="$YQ_SHA256_COL" '
+    $1 == asset {
+      print $col
+      exit
+    }
+  ' /tmp/yq_checksums
+)"
+if [[ -z "${YQ_SHA256}" ]]; then
+  echo "Could not find checksum for yq asset: ${YQ_ASSET}" >&2
+  exit 1
+fi
+echo "${YQ_SHA256}  /usr/local/bin/yq" | sha256sum -c -
 chmod +x /usr/local/bin/yq
-rm -f /tmp/yq_checksums
+rm -f /tmp/yq_checksums /tmp/yq_checksums_order
 
 # OpenTofu (pinned + checksum verification)
 TOFU_NUM="${TOFU_VERSION#v}"
