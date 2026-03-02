@@ -1,32 +1,34 @@
 # devops-aio-image
 
-All-in-one DevOps Docker image published to GHCR with automated daily rebuilds and dependency updates.
+All-in-one DevOps Docker image published to GHCR with automated dependency and tool version refresh.
 
 ## Included tools
-- AWS CLI v2 (latest at build time)
-- Google Cloud CLI (latest apt package)
-- OpenTofu (latest GitHub release)
+- AWS CLI v2 (pinned in Dockerfile, signature-verified)
+- Google Cloud CLI (signed apt repository)
+- OpenTofu (pinned in Dockerfile, checksum-verified)
 - PostgreSQL client (`psql`)
-- `mongosh` (latest GitHub release)
+- `mongosh` (signed apt repository)
 - Python 3.14
 - `jq`
-- `yq` (latest GitHub release)
-- `kubectl` (latest stable)
+- `yq` (pinned in Dockerfile, checksum-verified)
+- `kubectl` (pinned in Dockerfile, checksum-verified)
 
 ## Image
 - Registry: `ghcr.io/rammanokar-plateron/devops-aio-image`
 - Tags produced by CI:
   - `latest` (on `main`)
   - `sha-<commit>`
-  - daily schedule tag (`YYYYMMDD`)
 
 ## Automation
-- GitHub Actions workflow:
+- Build workflow (`build-and-push.yml`):
   - builds and pushes image on every push to `main`
-  - runs daily to rebuild with latest tool versions
+  - uses BuildKit cache + GitHub Actions cache for faster builds
+  - generates SBOM and provenance attestations
+- Tool refresh workflow (`refresh-tool-versions.yml`):
+  - runs daily and opens PR to bump pinned tool versions in `Dockerfile`
 - Dependabot:
-  - updates GitHub Actions dependencies
-  - updates Docker base image reference
+  - updates GitHub Actions versions
+  - updates Docker base image references
 
 ## Usage
 ```bash

@@ -1,0 +1,39 @@
+name: Refresh Tool Versions
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: refresh-tool-versions
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Update pinned tool versions
+        run: ./scripts/update-tool-versions.sh
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@84ae59a2cdc2258d6fa0732dd66352dddae2a412 # v7.0.9
+        with:
+          branch: chore/refresh-tool-versions
+          delete-branch: true
+          commit-message: "chore: refresh pinned tool versions"
+          title: "chore: refresh pinned tool versions"
+          body: |
+            Automated update of pinned CLI tool versions in Dockerfile.
+          labels: |
+            dependencies
+            docker
